@@ -105,6 +105,17 @@ static void applySwitchThreadHints(const char* name) {
     if (targetCore >= 0 && targetCore != preferredCore) {
         svcSetThreadCoreMask(CUR_THREAD_HANDLE, targetCore, (u32)affinityMask);
     }
+    // Threads inherit the priority of their creator, which is a borealis pool
+    // worker at 0x3A. Horizon does not time-slice threads of equal priority,
+    // so give the latency-critical stream threads a priority just above the
+    // UI thread (0x2C) to keep any busy worker from delaying them.
+    if (strncmp(name, "VideoRecv", 9) == 0 ||
+        strncmp(name, "VideoDec", 8) == 0 ||
+        strncmp(name, "AudioRecv", 9) == 0 ||
+        strncmp(name, "AudioDec", 8) == 0 ||
+        strncmp(name, "InputSend", 9) == 0) {
+        svcSetThreadPriority(CUR_THREAD_HANDLE, 0x2A);
+    }
 }
 #endif
 
